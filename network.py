@@ -14,7 +14,7 @@
 
 import numpy as np
 import random
-
+import time
 
 # ##### The Network Class
 
@@ -37,6 +37,7 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) 
                         for x, y in zip(sizes[:-1], sizes[1:])]
+        self.last_time  = time.time()
 
     #========================================================
     # ==>> Network output
@@ -86,6 +87,7 @@ class Network(object):
 
     def update_mini_batch(self, mini_batch, eta):
         
+        #the same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
@@ -120,7 +122,7 @@ class Network(object):
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
-        delta = self.cost_derivative(activations[-1], y) *         sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y)*sigmoid(zs[-1],1)
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -131,7 +133,7 @@ class Network(object):
         # that Python can use negative indices in lists.
         for l in range(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_prime(z)
+            sp = sigmoid(z,1)
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
@@ -153,13 +155,21 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         return (output_activations-y)
 
+    
+    #function of time, milliseconds of last tic() 
+    #reset define if you want clear the clock for the next tic()
+    def tic(self,reset = True):
+        toc = time.time()
+        delta = toc - self.last_time
+        if reset:
+            self.last_time = toc
+        return np.around(delta*1000, decimals = 2)
 
 # Sigmoid function \sigma
-def sigmoid(z):
-    return 1.0/(1.0+np.exp(-z))
-
-# Derivative of the sigmoid function.
-def sigmoid_prime(z):
+def sigmoid(z, ordem = 0):
+    if ordem is 0:
+        return 1.0/(1.0+np.exp(-z))
     return sigmoid(z)*(1-sigmoid(z))
+
 
 
