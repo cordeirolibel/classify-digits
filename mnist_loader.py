@@ -76,3 +76,25 @@ def vectorized_result(j):
     e = np.zeros((10, 1))
     e[j] = 1.0
     return e
+
+
+def digit_print(digit):
+    #if know the number, print
+    if len(digit) is 2:
+        print(digit[1].argmax())
+        digit = digit[0]
+
+    new_line = 0
+    for pixel in digit:
+        if pixel > 0.5:
+            print('[]',end='')
+        elif pixel > 0:
+            print('::',end='')
+        else:
+            print('  ',end='')
+
+        new_line+=1
+        if new_line is 28:
+            print('|')
+            new_line = 0
+

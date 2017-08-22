@@ -15,6 +15,7 @@
 import numpy as np
 import random
 import time
+import sys
 
 # ##### The Network Class
 
@@ -78,6 +79,8 @@ class Network(object):
                 print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
             else:
                 print ("Epoch {0} complete".format(j))
+
+            sys.stdout.flush()
 
     #========================================================
     # Update the network's weights and biases by applying
