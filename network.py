@@ -60,6 +60,8 @@ class Network(object):
     # tracking progress, but slows things down substantially.
     def SGD(self, training_data, epochs, mini_batch_size, eta,test_data=None):
         
+        sys.stdout.flush()
+
         if test_data: 
             n_test = len(test_data)
         n = len(training_data)
@@ -80,8 +82,6 @@ class Network(object):
             else:
                 print ("Epoch {0} complete".format(j))
 
-            sys.stdout.flush()
-
     #========================================================
     # Update the network's weights and biases by applying
     # gradient descent using backpropagation to a single mini batch.
@@ -95,7 +95,9 @@ class Network(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
         for x, y in mini_batch:
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+            #delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+            delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
+
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
             
@@ -106,6 +108,49 @@ class Network(object):
 
     #========================================================
     # ==>> Backpropagation
+    def backprop2(self, x, y):
+
+        # a[0]=input, a[1]=layer1, ...
+        a = list()
+        z = list()
+        a.append(x)
+        for layer in range(self.num_layers-1):
+            #print(len(self.weights))
+            # z = w*a+b
+            z.append(np.dot(self.weights[layer],a[layer]) + self.biases[layer])
+            # a = sig(z)
+            a.append(sigmoid(z[-1]))
+
+        # BP1: d = partial C/partial a^L * sigmoid'(z^L)
+        #      d = (a^L-y) (*) sigmoid'(z^L)
+        # (*) Hadamart Product -> np.multiply(a,b)
+        delta = np.multiply((a[-1] - y) , (sigmoid(z[-1],1)))
+
+        # same size of biases but of zeros
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+
+        nabla_b[-1] = delta
+        #nabla_w[-1] = np.dot(a[-2],delta)
+        nabla_w[-1] = np.dot(delta, a[-2].T)
+
+        #if num_layers=4   
+        #layer <- 2 <- 1 
+        for layer in range(self.num_layers-2,0,-1):
+            
+            # d = (wT*d) (*) sigmoid'(z)
+            # d^l = ((w^(l+1))^T*d^(l+1)) (*) sigmoid(z^l)
+            # (*) Hadamart Product -> np.multiply(a,b)
+            aux = np.dot(self.weights[layer].T,delta)
+            delta = aux * sigmoid(z[layer-1],1)
+
+            nabla_b[layer-1] = delta
+            #nabla_w[layer] = np.dot(a[layer-1],delta)
+            nabla_w[layer-1] = np.dot(delta, a[layer-1].T)
+
+        return (nabla_b, nabla_w)
+
+
 
     # Return a tuple (\nabla b, \nabla w) representing the
     # gradient for the cost function C_x.  \nabla b and
@@ -113,9 +158,13 @@ class Network(object):
     # to self.biases and self.weights.
 
     def backprop(self, x, y):
+        # same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-        # feedforward
+
+        # feedforward - save all layers
+        # z = w*a+b    
+        # a = sigmoid(z)
         activation = x
         activations = [x] # list to store all the activations, layer by layer
         zs = [] # list to store all the z vectors, layer by layer
@@ -124,6 +173,7 @@ class Network(object):
             zs.append(z)
             activation = sigmoid(z)
             activations.append(activation)
+
         # backward pass
         delta = self.cost_derivative(activations[-1], y)*sigmoid(zs[-1],1)
         nabla_b[-1] = delta
