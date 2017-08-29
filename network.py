@@ -68,6 +68,12 @@ class Network(object):
 
         for j in range(epochs):
 
+            if test_data:
+                print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
+            else:
+                print ("Epoch {0} complete".format(j))
+            sys.stdout.flush()
+
             # slice training_data in mini_batch_size size random
             random.shuffle(training_data)
             mini_batches = [
@@ -77,10 +83,11 @@ class Network(object):
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
                 
-            if test_data:
-                print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
-            else:
-                print ("Epoch {0} complete".format(j))
+        if test_data:
+            print ("Epoch {0}: {1} / {2}".format(epochs, self.evaluate(test_data), n_test))
+        else:
+            print ("Epoch {0} complete".format(epochs))
+        sys.stdout.flush()
 
     #========================================================
     # Update the network's weights and biases by applying
@@ -113,18 +120,19 @@ class Network(object):
         # a[0]=input, a[1]=layer1, ...
         a = list()
         z = list()
-        a.append(x)
         for layer in range(self.num_layers-1):
-            #print(len(self.weights))
             # z = w*a+b
-            z.append(np.dot(self.weights[layer],a[layer]) + self.biases[layer])
+            if layer == 0:
+                z.append(np.dot(self.weights[layer],     x    ) + self.biases[layer])
+            else:
+                z.append(np.dot(self.weights[layer],a[layer-1]) + self.biases[layer])
             # a = sig(z)
             a.append(sigmoid(z[-1]))
 
         # BP1: d = partial C/partial a^L * sigmoid'(z^L)
         #      d = (a^L-y) (*) sigmoid'(z^L)
-        # (*) Hadamart Product -> np.multiply(a,b)
-        delta = np.multiply((a[-1] - y) , (sigmoid(z[-1],1)))
+        # (*) Hadamart Product -> *
+        delta = (a[-1] - y) * (sigmoid(z[-1],1))
 
         # same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
@@ -135,18 +143,21 @@ class Network(object):
         nabla_w[-1] = np.dot(delta, a[-2].T)
 
         #if num_layers=4   
-        #layer <- 2 <- 1 
-        for layer in range(self.num_layers-2,0,-1):
+        #layer <- 1 <- 0 
+        for layer in range(self.num_layers-3,-1,-1):
             
             # d = (wT*d) (*) sigmoid'(z)
             # d^l = ((w^(l+1))^T*d^(l+1)) (*) sigmoid(z^l)
-            # (*) Hadamart Product -> np.multiply(a,b)
-            aux = np.dot(self.weights[layer].T,delta)
-            delta = aux * sigmoid(z[layer-1],1)
+            # (*) Hadamart Product -> *
+            aux = np.dot(self.weights[layer+1].T,delta)
+            delta = aux * sigmoid(z[layer],1)
 
-            nabla_b[layer-1] = delta
+            nabla_b[layer] = delta
             #nabla_w[layer] = np.dot(a[layer-1],delta)
-            nabla_w[layer-1] = np.dot(delta, a[layer-1].T)
+            if layer == 0:
+                nabla_w[layer] = np.dot(delta,     x.T     )
+            else:
+                nabla_w[layer] = np.dot(delta, a[layer-1].T)
 
         return (nabla_b, nabla_w)
 

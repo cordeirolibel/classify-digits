@@ -15,7 +15,7 @@ training_data, validation_data, test_data = ml.load_data_wrapper('data/mnist.pkl
 net = network.Network([784, 30, 10])
 
 net.tic()
-net.SGD(training_data, 10, 10, 3.0, test_data=test_data)
+net.SGD(training_data, 2, 10, 3.0, test_data=test_data)
 print(net.tic(),'ms')
 
 print('end')
