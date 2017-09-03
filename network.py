@@ -16,6 +16,7 @@ import numpy as np
 import random
 import time
 import sys
+from scipy.misc import toimage
 
 # ##### The Network Class
 
@@ -162,7 +163,7 @@ class Network(object):
         return (nabla_b, nabla_w)
 
 
-
+    #========================================================
     # Return a tuple (\nabla b, \nabla w) representing the
     # gradient for the cost function C_x.  \nabla b and
     # \nabla w are layer-by-layer lists of numpy arrays, similar
@@ -203,7 +204,7 @@ class Network(object):
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
         return (nabla_b, nabla_w)
 
-
+    #========================================================
     # Return the number of test inputs for which the neural
     # network outputs the correct result. Note that the neural
     # network's output is assumed to be the index of whichever
@@ -214,12 +215,13 @@ class Network(object):
         return sum(int(x == y) for (x, y) in test_results)
 
 
+    #========================================================
     # Return the vector of partial derivatives \partial C_x 
     # /\partial a for the output activations.
     def cost_derivative(self, output_activations, y):
         return (output_activations-y)
 
-    
+    #========================================================
     #function of time, milliseconds of last tic() 
     #reset define if you want clear the clock for the next tic()
     def tic(self,reset = True):
@@ -229,6 +231,36 @@ class Network(object):
             self.last_time = toc
         return np.around(delta*1000, decimals = 2)
 
+    #========================================================
+
+    def weights_img_save(self):
+        k = 1
+        for w in self.weights[0]:
+            #array to matrix
+            size = int(np.sqrt(w.shape))
+            w = w.reshape(size,size)
+
+            #normalize [0.0,1.0] 
+            normalize = w-w.min()
+            normalize = normalize/normalize.max()
+            
+            normalize2 = sigmoid(w)
+
+            normalize3 = normalize.copy()
+            normalize3[normalize3<0.4] = 0.0
+            normalize3[normalize3>0.6] = 1.0
+
+            #save img
+            img = toimage(normalize)
+            img.save('imgs/w_'+str(k)+'.png')
+            img = toimage(normalize2)
+            img.save('imgs/w_'+str(k)+'b.png')
+            img = toimage(normalize3)
+            img.save('imgs/w_'+str(k)+'c.png')
+            k+=1
+
+
+#========================================================
 # Sigmoid function \sigma
 def sigmoid(z, ordem = 0):
     if ordem is 0:
