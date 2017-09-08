@@ -234,30 +234,28 @@ class Network(object):
     #========================================================
 
     def weights_img_save(self):
-        k = 1
-        for w in self.weights[0]:
+
+        n_imgs = self.weights[1].shape[0]
+        n_inputs = self.weights[0].shape[1]
+
+        imgs = np.dot(self.weights[1],self.weights[0])
+
+        k = 0
+        size = int(np.sqrt(self.weights[0][0].shape))
+        for img in imgs:
             #array to matrix
-            size = int(np.sqrt(w.shape))
-            w = w.reshape(size,size)
+            img = img.reshape(size,size)
 
-            #normalize [0.0,1.0] 
-            normalize = w-w.min()
-            normalize = normalize/normalize.max()
-            
-            normalize2 = sigmoid(w)
+            #normalize
+            img -= img.min()
+            img /= img.max()
 
-            normalize3 = normalize.copy()
-            normalize3[normalize3<0.4] = 0.0
-            normalize3[normalize3>0.6] = 1.0
-
-            #save img
-            img = toimage(normalize)
+            #save imgs
+            img = toimage(img)
             img.save('imgs/w_'+str(k)+'.png')
-            img = toimage(normalize2)
-            img.save('imgs/w_'+str(k)+'b.png')
-            img = toimage(normalize3)
-            img.save('imgs/w_'+str(k)+'c.png')
-            k+=1
+            k += 1
+
+
 
 
 #========================================================
