@@ -256,11 +256,10 @@ class Network(object):
             k += 1
 
 
-
-
 #========================================================
 # Sigmoid function \sigma
-def sigmoid(z, ordem = 0):
+# z is a numpy array
+def sigmoid(z, ordem = 0, inv = False):
     if ordem is 0:
         return 1.0/(1.0+np.exp(-z))
     return sigmoid(z)*(1-sigmoid(z))
