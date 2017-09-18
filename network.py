@@ -103,8 +103,10 @@ class Network(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
         for x, y in mini_batch:
-            #delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
+            #self.backprop3(x, y)
+            #delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
+            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+            #exit()
 
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
@@ -116,9 +118,56 @@ class Network(object):
 
     #========================================================
     # ==>> Backpropagation
+    def backprop3(self, x, y):
+        # x, a[0]=layer1, a[1]=layer2, ...
+        a = list()
+        z = list()
+        for layer in range(self.num_layers-1):
+            # z = w*a+b
+            if layer == 0:
+                z.append(np.dot(self.weights[layer],     x    ) + self.biases[layer])
+            else:
+                z.append(np.dot(self.weights[layer],a[layer-1]) + self.biases[layer])
+            # a = sig(z)
+            a.append(sigmoid(z[-1]))
+
+
+        #jacobiana a^L (z^L)
+        #np.diag : array to diagonal matrix
+        jac_a_z = np.diag(sigmoid(z[-1],1).T[0])
+        delta = np.dot(jac_a_z,(a[-1]-y))
+
+        # same size of biases but of zeros
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+
+        #last layer update
+        nabla_b[-1] = delta
+        nabla_w[-1] = np.dot(delta,a[-2].T)
+
+        #if num_layers=4   
+        #layer <- 1 <- 0 
+        for layer in range(self.num_layers-3,-1,-1):
+            #jacobiana z^{l+1} (z^l)
+            aux_matrix = np.repeat(sigmoid(z[layer],1).T, self.sizes[layer+2], axis=0)
+
+            jac_zplus_z = self.weights[layer+1]*aux_matrix
+
+            delta = np.dot(jac_zplus_z.T,delta)
+
+            nabla_b[layer] = delta
+            if layer == 0:
+                nabla_w[layer] = np.dot(delta,     x.T     )
+            else:
+                nabla_w[layer] = np.dot(delta, a[layer-1].T)
+
+        return (nabla_b, nabla_w)
+
+    #========================================================
+    # ==>> Backpropagation
     def backprop2(self, x, y):
 
-        # a[0]=input, a[1]=layer1, ...
+        # x, a[0]=layer1, a[1]=layer2, ...
         a = list()
         z = list()
         for layer in range(self.num_layers-1):
@@ -259,7 +308,7 @@ class Network(object):
 #========================================================
 # Sigmoid function \sigma
 # z is a numpy array
-def sigmoid(z, ordem = 0, inv = False):
+def sigmoid(z, ordem = 0):
     if ordem is 0:
         return 1.0/(1.0+np.exp(-z))
     return sigmoid(z)*(1-sigmoid(z))
