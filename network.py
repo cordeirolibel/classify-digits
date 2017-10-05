@@ -39,7 +39,6 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) 
                         for x, y in zip(sizes[:-1], sizes[1:])]
-        self.last_time  = time.time()
 
     #========================================================
     # ==>> Network output
@@ -83,13 +82,17 @@ class Network(object):
 
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
-                
+    
+        rate = 0
         if test_data:
-            print ("Epoch {0}: {1} / {2}".format(epochs, self.evaluate(test_data), n_test))
+            rate = self.evaluate(test_data)
+            print ("Epoch {0}: {1} / {2}".format(epochs, rate, n_test))            
         else:
             print ("Epoch {0} complete".format(epochs))
-        sys.stdout.flush()
 
+        sys.stdout.flush()
+        return rate*100/n_test
+        
     #========================================================
     # Update the network's weights and biases by applying
     # gradient descent using backpropagation to a single mini batch.
@@ -270,15 +273,6 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         return (output_activations-y)
 
-    #========================================================
-    #function of time, milliseconds of last tic() 
-    #reset define if you want clear the clock for the next tic()
-    def tic(self,reset = True):
-        toc = time.time()
-        delta = toc - self.last_time
-        if reset:
-            self.last_time = toc
-        return np.around(delta*1000, decimals = 2)
 
     #========================================================
 
@@ -314,4 +308,14 @@ def sigmoid(z, ordem = 0):
     return sigmoid(z)*(1-sigmoid(z))
 
 
-
+#========================================================
+#function of time, milliseconds of last tic() 
+#reset define if you want clear the clock for the next tic()
+last_time  = time.time()
+def tic(reset = True):
+    global last_time
+    toc = time.time()
+    delta = toc - last_time
+    if reset:
+        last_time = toc
+    return np.around(delta*1000, decimals = 2)
