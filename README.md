@@ -1,5 +1,6 @@
 # Network to Classify Handwritten Digits
 Stochastic gradient descent learning algorithm for a feedforward neural network.
+Quadratic and Cross-Entropy Cost Function 
 
 PCA - Principal Component Analysis 
 

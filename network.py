@@ -1,5 +1,5 @@
 #========================================================
-# Network to Classify Digits
+# Network to Classify Digits 
 # CordeiroLibel 2017
 # Reference: http://neuralnetworksanddeeplearning.com/
 #========================================================
@@ -39,6 +39,8 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) 
                         for x, y in zip(sizes[:-1], sizes[1:])]
+        self.cost_function = 'quadratic' 
+        #self.cost_function = 'cross-entropy'
 
     #========================================================
     # ==>> Network output
@@ -107,9 +109,8 @@ class Network(object):
         
         for x, y in mini_batch:
             #self.backprop3(x, y)
-            #delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            #exit()
+            #delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+            delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
 
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
@@ -185,7 +186,10 @@ class Network(object):
         # BP1: d = partial C/partial a^L * sigmoid'(z^L)
         #      d = (a^L-y) (*) sigmoid'(z^L)
         # (*) Hadamart Product -> *
-        delta = (a[-1] - y) * (sigmoid(z[-1],1))
+        if self.cost_function == 'quadratic':
+            delta = (a[-1] - y) * (sigmoid(z[-1],1))
+        else: #cross-entropy
+            delta = (sigmoid(z[-1],1)) * ((1-y)/(1-a[-1]) - y/a[-1])
 
         # same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
