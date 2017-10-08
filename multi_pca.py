@@ -28,7 +28,7 @@ for i in n_components_pca:
 	pcas[-1].fit(training_data)
 
 # file to save the result
-file = open('DadosPCAs','w')
+file = open('data/DadosPCAs','w')
 file.write('n_components\trate(%)\ttime(ms)\n') 
 
 # training with all PCAs

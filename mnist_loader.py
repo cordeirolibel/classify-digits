@@ -40,7 +40,7 @@ def load_data(dir):
     f.close()
     return (training_data, validation_data, test_data)
 
-def load_data_wrapper(dir = 'mnist.pkl.gz'):
+def load_data_wrapper(dir = 'mnist.pkl.gz', only_num = None):
     """Return a tuple containing ``(training_data, validation_data,
     test_data)``. Based on ``load_data``, but the format is more
     convenient for use in our implementation of neural networks.
@@ -61,7 +61,19 @@ def load_data_wrapper(dir = 'mnist.pkl.gz'):
     tr_d, va_d, te_d = load_data(dir)
     training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
     training_results = [vectorized_result(y) for y in tr_d[1]]
-    training_data = list(zip(training_inputs, training_results))
+    if only_num == None:
+        training_data = list(zip(training_inputs, training_results))
+    else:
+        training_data = list()
+        for inp, res in zip(training_inputs, training_results):
+            if res[only_num] == [1]:
+                training_data.append((inp,res))
+    #training_data = list(training_data)
+    #print(training_data[0:2])
+    #training_data = list(zip(training_inputs, training_results))
+    #print(training_data[0:2])
+    #exit()
+
     validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
     validation_data = list(zip(validation_inputs, va_d[1]))
     test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]

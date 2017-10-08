@@ -10,20 +10,28 @@ from pca import Pca
 #training_data:50000  validation_data:10000  test_data:10000 images
 training_data, validation_data, test_data = ml.load_data_wrapper('data/mnist.pkl.gz')
 
-#ml.digit_print(training_data[123])
+#net = Network([784, 20, 10])
 
-#net = network.Network([784,30, 10])
-net = Network([30,20, 10])
+net = Network([2,20, 10])
 net.cost_function = 'cross-entropy'
+
 tic()
 
-pca = Pca(30)
+pca = Pca(2)
 training_data,test_data = pca.run(training_data,test_data)
+
+#pca.images_save()
 
 print(tic(),'ms')
 
-net.SGD(training_data, 20, 10, 0.5, test_data=test_data)
+net.SGD(training_data, 5, 10, 0.5, test_data=test_data)
 #net.weights_img_save()
+
+tic()
+predict_data = net.predict(test_data)
+
+pca.plot(test_data,pause=False,name='Test Dataset')
+pca.plot(predict_data,name='Predict Dataset')
 
 print(tic(),'ms')
 

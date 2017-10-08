@@ -1,6 +1,8 @@
 
 __pycache__
-data
+
+data/info
+
 .ipynb_checkpoints
 
 *.png
@@ -10,4 +12,14 @@ data
 
 *.gz
 
+*.ggb
+
 !rede.png
+
+!rate.jpg
+
+!time.jpg
+
+!TestDataset.png
+
+!PredDataset.png

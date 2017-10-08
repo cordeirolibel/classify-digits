@@ -270,7 +270,11 @@ class Network(object):
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
-
+    #predict data
+    def predict(self, test_data):
+        predict_data = [(x,np.argmax(self.feedforward(x)))
+                        for (x, y) in test_data]
+        return predict_data
     #========================================================
     # Return the vector of partial derivatives \partial C_x 
     # /\partial a for the output activations.
