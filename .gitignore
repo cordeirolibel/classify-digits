@@ -14,9 +14,13 @@ data/info
 
 *.ggb
 
+*.m
+
 !rede.png
 
 !rate.jpg
+
+!rate5.jpg
 
 !time.jpg
 
