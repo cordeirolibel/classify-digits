@@ -5,6 +5,7 @@
 
 from network import Network, tic
 import mnist_loader as ml
+import time
 from pca import Pca
 
 #training_data:50000  validation_data:10000  test_data:10000 images
@@ -29,7 +30,7 @@ for i in n_components_pca:
 
 # file to save the result
 file = open('data/DadosPCAs','w')
-file.write('n_components\trate(%)\ttime(ms)\n') 
+file.write('n_components\trate(%)\ttime(ms)\ttimestamp\n') 
 
 # training with all PCAs
 print('train')
@@ -45,9 +46,11 @@ for i,pca in zip(n_components_pca,pcas):
 	rate = net.SGD(training_data_tmp, 10, 10, 3.0, test_data=test_data_tmp)
 
 	# Save
-	line = str(i)+'\t'+str(rate)+'\t'+str(tic())
+	t = time.time()
+	line = str(i)+'\t'+str(rate)+'\t'+str(tic())+'\t'+str(t)
 	print(line)
 	file.write(line+'\n')
 
 print('end')
 file.close
+

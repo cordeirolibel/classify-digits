@@ -41,13 +41,16 @@ class Network(object):
                         for x, y in zip(sizes[:-1], sizes[1:])]
         self.cost_function = 'quadratic' 
         #self.cost_function = 'cross-entropy'
+        self.custom_cost_function = np.ones((sizes[-1],1))
+
 
     #========================================================
     # ==>> Network output
     # Return the output of the network if "a" is input.
     def feedforward(self, a):
         for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a)+b)
+            z = np.dot(w, a)+b
+            a = sigmoid(z)
         return a
 
     #========================================================
@@ -108,9 +111,7 @@ class Network(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
         for x, y in mini_batch:
-            #self.backprop3(x, y)
-            #delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            delta_nabla_b, delta_nabla_w = self.backprop2(x, y)
+            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
 
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
@@ -120,56 +121,15 @@ class Network(object):
         self.biases = [b-(eta/len(mini_batch))*nb 
                        for b, nb in zip(self.biases, nabla_b)]
 
-    #========================================================
-    # ==>> Backpropagation
-    def backprop3(self, x, y):
-        # x, a[0]=layer1, a[1]=layer2, ...
-        a = list()
-        z = list()
-        for layer in range(self.num_layers-1):
-            # z = w*a+b
-            if layer == 0:
-                z.append(np.dot(self.weights[layer],     x    ) + self.biases[layer])
-            else:
-                z.append(np.dot(self.weights[layer],a[layer-1]) + self.biases[layer])
-            # a = sig(z)
-            a.append(sigmoid(z[-1]))
-
-
-        #jacobiana a^L (z^L)
-        #np.diag : array to diagonal matrix
-        jac_a_z = np.diag(sigmoid(z[-1],1).T[0])
-        delta = np.dot(jac_a_z,(a[-1]-y))
-
-        # same size of biases but of zeros
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-
-        #last layer update
-        nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta,a[-2].T)
-
-        #if num_layers=4   
-        #layer <- 1 <- 0 
-        for layer in range(self.num_layers-3,-1,-1):
-            #jacobiana z^{l+1} (z^l)
-            aux_matrix = np.repeat(sigmoid(z[layer],1).T, self.sizes[layer+2], axis=0)
-
-            jac_zplus_z = self.weights[layer+1]*aux_matrix
-
-            delta = np.dot(jac_zplus_z.T,delta)
-
-            nabla_b[layer] = delta
-            if layer == 0:
-                nabla_w[layer] = np.dot(delta,     x.T     )
-            else:
-                nabla_w[layer] = np.dot(delta, a[layer-1].T)
-
-        return (nabla_b, nabla_w)
 
     #========================================================
     # ==>> Backpropagation
-    def backprop2(self, x, y):
+    # Return a tuple (\nabla b, \nabla w) representing the
+    # gradient for the cost function C_x.  \nabla b and
+    # \nabla w are layer-by-layer lists of numpy arrays, similar
+    # to self.biases and self.weights.
+
+    def backprop(self, x, y):
 
         # x, a[0]=layer1, a[1]=layer2, ...
         a = list()
@@ -218,47 +178,6 @@ class Network(object):
 
         return (nabla_b, nabla_w)
 
-
-    #========================================================
-    # Return a tuple (\nabla b, \nabla w) representing the
-    # gradient for the cost function C_x.  \nabla b and
-    # \nabla w are layer-by-layer lists of numpy arrays, similar
-    # to self.biases and self.weights.
-
-    def backprop(self, x, y):
-        # same size of biases but of zeros
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-
-        # feedforward - save all layers
-        # z = w*a+b    
-        # a = sigmoid(z)
-        activation = x
-        activations = [x] # list to store all the activations, layer by layer
-        zs = [] # list to store all the z vectors, layer by layer
-        for b, w in zip(self.biases, self.weights):
-            z = np.dot(w, activation)+b
-            zs.append(z)
-            activation = sigmoid(z)
-            activations.append(activation)
-
-        # backward pass
-        delta = self.cost_derivative(activations[-1], y)*sigmoid(zs[-1],1)
-        nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the reference.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the reference, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
-        for l in range(2, self.num_layers):
-            z = zs[-l]
-            sp = sigmoid(z,1)
-            delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
-            nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
-        return (nabla_b, nabla_w)
 
     #========================================================
     # Return the number of test inputs for which the neural
@@ -315,6 +234,12 @@ def sigmoid(z, ordem = 0):
         return 1.0/(1.0+np.exp(-z))
     return sigmoid(z)*(1-sigmoid(z))
 
+#========================================================
+# softmax function 
+# z is a numpy array
+def softmax(z):
+    total = sum(z)
+    return z/total
 
 #========================================================
 #function of time, milliseconds of last tic() 

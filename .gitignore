@@ -15,6 +15,7 @@ data/info
 *.ggb
 
 *.m
+octave-workspace
 
 !rede.png
 
