@@ -13,6 +13,7 @@
 #========================================================
 
 import numpy as np
+from bokeh.plotting import figure, show, output_file
 import random
 import time
 import sys
@@ -42,7 +43,8 @@ class Network(object):
         self.cost_function = 'quadratic' 
         #self.cost_function = 'cross-entropy'
         self.custom_cost_function = np.ones((sizes[-1],1))
-
+        self.regularization_parameter = 0
+        self.n_train = None
 
     #========================================================
     # ==>> Network output
@@ -63,18 +65,22 @@ class Network(object):
     # network will be evaluated against the test data after each
     # epoch, and partial progress printed out.  This is useful for
     # tracking progress, but slows things down substantially.
-    def SGD(self, training_data, epochs, mini_batch_size, eta,test_data=None):
+    def SGD(self, training_data, epochs, mini_batch_size, eta,test_data=None, plot_cost = False):
         
         sys.stdout.flush()
 
         if test_data: 
             n_test = len(test_data)
-        n = len(training_data)
+        self.n_train = len(training_data)
+
+        costs = []
 
         for j in range(epochs):
 
             if test_data:
                 print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
+                if plot_cost:
+                    costs.append(self.cost_func(test_data))
             else:
                 print ("Epoch {0} complete".format(j))
             sys.stdout.flush()
@@ -83,7 +89,7 @@ class Network(object):
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
-                for k in range(0, n, mini_batch_size)]
+                for k in range(0, self.n_train, mini_batch_size)]
 
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
@@ -96,6 +102,9 @@ class Network(object):
             print ("Epoch {0} complete".format(epochs))
 
         sys.stdout.flush()
+
+        if plot_cost:
+            self.plotCost(costs)
         return rate*100/n_test
         
     #========================================================
@@ -115,8 +124,10 @@ class Network(object):
 
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-            
-        self.weights = [w-(eta/len(mini_batch))*nw 
+        
+        rp = self.regularization_parameter
+        n = self.n_train
+        self.weights = [(1-eta*rp/n)*w-(eta/len(mini_batch))*nw 
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb 
                        for b, nb in zip(self.biases, nabla_b)]
@@ -194,6 +205,36 @@ class Network(object):
         predict_data = [(x,np.argmax(self.feedforward(x)))
                         for (x, y) in test_data]
         return predict_data
+
+    #========================================================
+    #'quadratic' 
+    #'cross-entropy'
+    def cost_func(self,data):
+        test_results = [(self.feedforward(x), y)
+                        for (x, y) in data]
+
+        n = len(data)
+        rp = self.regularization_parameter
+        if self.cost_function == 'quadratic':
+            cost = 0
+            for (x, y) in test_results:
+                cost+=sum((y-x)**2)/(2*n)
+        else:#cross_entropy
+            cost = 0
+            for (x, y) in test_results:
+                cost+=-sum(y*np.log(x)+(1-y)*np.log(1-x))/n
+        
+        for ws in self.weights:
+            for w in ws:
+                cost+=rp*sum(w**2)/(2*n)
+
+        return float(cost)
+
+    def plotCost(self,costs):
+        p = figure(title="Cost Function")
+        x = list(range(len(costs)))
+        p.line(x,costs, line_width=3)
+        show(p) 
     #========================================================
     # Return the vector of partial derivatives \partial C_x 
     # /\partial a for the output activations.
