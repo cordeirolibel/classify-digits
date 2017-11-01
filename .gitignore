@@ -9,24 +9,22 @@ data/info
 *.jpg
 
 *.pyc
-
 *.gz
-
 *.ggb
 
 *.html
-
 *.m
+
 octave-workspace
 
-!rede.png
-
 !rate.jpg
-
 !rate5.jpg
-
 !time.jpg
 
+!rede.png
 !TestDataset.png
-
 !PredDataset.png
+
+!Train.html
+!Test.html
+

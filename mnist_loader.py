@@ -15,6 +15,11 @@ import gzip
 
 # Third-party libraries
 import numpy as np
+import poppy.zernike as zk
+from scipy.misc import imrotate, toimage
+import random
+import pandas as pd 
+from skimage.transform import pyramid_gaussian
 
 def load_data(dir):
     """Return the MNIST data as a tuple containing the training data,
@@ -36,11 +41,12 @@ def load_data(dir):
     below.
     """
     f = gzip.open(dir, 'rb')
+
     training_data, validation_data, test_data = pickle.load(f, encoding="latin1")
-    f.close()
+
     return (training_data, validation_data, test_data)
 
-def load_data_wrapper(dir = 'mnist.pkl.gz', only_num = None):
+def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None):
     """Return a tuple containing ``(training_data, validation_data,
     test_data)``. Based on ``load_data``, but the format is more
     convenient for use in our implementation of neural networks.
@@ -93,20 +99,93 @@ def vectorized_result(j):
 def digit_print(digit):
     #if know the number, print
     if len(digit) is 2:
-        print(digit[1].argmax())
+        if digit[1].shape==():
+            print(digit[1])
+        else:
+            print(digit[1].argmax())
         digit = digit[0]
+    
+    size = len(digit)
+    l = int(np.sqrt(size))
 
     new_line = 0
     for pixel in digit:
-        if pixel > 0.5:
-            print('[]',end='')
-        elif pixel > 0:
-            print('::',end='')
-        else:
-            print('  ',end='')
+        if len(pixel)==1: #vector image
+            if pixel > 0.5:
+                print('[]',end='')
+            elif pixel > 0:
+                print('::',end='')
+            else:
+                print('  ',end='')
 
-        new_line+=1
-        if new_line is 28:
+            new_line+=1
+            if new_line is l:
+                print('|')
+                new_line = 0
+        else: #matrix image
+            for p in pixel:
+                if p > 0.5:
+                    print('[]',end='')
+                elif p > 0:
+                    print('::',end='')
+                else:
+                    print('  ',end='')
             print('|')
-            new_line = 0
 
+def more_data(data, ang = 10):
+
+    print('more img')
+    data_out = list()
+    for img in data:
+        num = list()
+        if len(img) == 2:
+            num = img[1]
+            img = img[0]
+        
+        # array to matrix
+        size = int(np.sqrt(len(img)))
+        imgM = img.reshape(size,size)
+
+        # rotate
+        img1M = imrotate(imgM,ang)/256
+        img2M = imrotate(imgM,-ang)/256
+
+        # matrix to array
+        img1 = img1M.reshape(size**2,1)
+        img2 = img2M.reshape(size**2,1)
+
+        # save
+        if not num == []:
+            img1 = (img1,num)
+            img2 = (img2,num)
+            img = (img,num)
+        data_out.append(img1)
+        data_out.append(img2)
+        data_out.append(img)
+
+    # pyramid 
+    downscale = 2
+    pyramid = tuple(pyramid_gaussian(imgM, downscale=downscale))
+    k=1
+    for p in pyramid:
+        F = np.fft.fft2(p)
+        toimage(np.abs(F)).save('imgs/fft/fft_'+str(k)+'.png')
+        toimage(p).save('imgs/fft/p_'+str(k)+'.png')
+        k+=1
+
+    random.shuffle(data_out)
+    return data_out
+
+#training_data, validation_data, test_data = load_data_wrapper('data/mnist.pkl.gz')
+
+#img = training_data[222][0]
+
+#size = int(np.sqrt(len(img)))
+#img = img.reshape(size,size)
+
+
+#print(zk.zernike(img))
+
+#img = imrotate(img,45)/256
+
+#print(zk.zernike(img))

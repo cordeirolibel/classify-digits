@@ -1,6 +1,6 @@
 #========================================================
 # CordeiroLibel 2017 - https://github.com/cordeirolibel/
-# PCA for different number of components
+# 
 #========================================================
 
 import psutil

@@ -34,12 +34,16 @@ from scipy.misc import toimage
 
 class Network(object):
 
-    def __init__(self, sizes):
+    def __init__(self, sizes, large_weight = False):
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x) 
-                        for x, y in zip(sizes[:-1], sizes[1:])]
+        if large_weight:
+            self.weights = [np.random.randn(y, x) 
+                            for x, y in zip(sizes[:-1], sizes[1:])]
+        else:
+            self.weights = [np.random.randn(y, x)/np.sqrt(x) 
+                            for x, y in zip(sizes[:-1], sizes[1:])]
         self.cost_function = 'quadratic' 
         #self.cost_function = 'cross-entropy'
         self.custom_cost_function = np.ones((sizes[-1],1))
@@ -73,14 +77,16 @@ class Network(object):
             n_test = len(test_data)
         self.n_train = len(training_data)
 
-        costs = []
+        costs_test = []
+        costs_train = []
 
         for j in range(epochs):
 
             if test_data:
                 print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
                 if plot_cost:
-                    costs.append(self.cost_func(test_data))
+                    costs_test.append(self.cost_func(test_data,convert=True))
+                    costs_train.append(self.cost_func(training_data))
             else:
                 print ("Epoch {0} complete".format(j))
             sys.stdout.flush()
@@ -104,7 +110,8 @@ class Network(object):
         sys.stdout.flush()
 
         if plot_cost:
-            self.plotCost(costs)
+            self.plotCost(costs_test,'Test')
+            self.plotCost(costs_train,'Train')
         return rate*100/n_test
         
     #========================================================
@@ -196,8 +203,11 @@ class Network(object):
     # network's output is assumed to be the index of whichever
     # neuron in the final layer has the highest activation.
     def evaluate(self, test_data):
-        test_results = [(np.argmax(self.feedforward(x)), y)
-                        for (x, y) in test_data]
+        test_results = list()
+        for (x, y) in test_data:
+            a = self.feedforward(x)
+            test_results.append((np.argmax(a), y))
+        #print(test_results)
         return sum(int(x == y) for (x, y) in test_results)
 
     #predict data
@@ -206,10 +216,13 @@ class Network(object):
                         for (x, y) in test_data]
         return predict_data
 
+    
+
     #========================================================
     #'quadratic' 
     #'cross-entropy'
-    def cost_func(self,data):
+    def cost_func(self,data, convert = False):
+
         test_results = [(self.feedforward(x), y)
                         for (x, y) in data]
 
@@ -217,23 +230,35 @@ class Network(object):
         rp = self.regularization_parameter
         if self.cost_function == 'quadratic':
             cost = 0
-            for (x, y) in test_results:
-                cost+=sum((y-x)**2)/(2*n)
+            for (a, y) in test_results:
+                if convert:
+                    y = vectorized(y, len(a))
+                e = np.linalg.norm(a-y)
+                cost+=e**2/(2*n)
         else:#cross_entropy
             cost = 0
-            for (x, y) in test_results:
-                cost+=-sum(y*np.log(x)+(1-y)*np.log(1-x))/n
-        
-        for ws in self.weights:
-            for w in ws:
-                cost+=rp*sum(w**2)/(2*n)
+            for (a, y) in test_results:
+                if convert:
+                    y = vectorized(y, len(a))
+                e = y*np.log(a)+(1-y)*np.log(1-a)
+                cost+=-np.sum(np.nan_to_num(e))/n
+
+        for w in self.weights:
+
+            w = np.linalg.norm(w)
+            cost+=rp*w**2/(2*n)
 
         return float(cost)
 
-    def plotCost(self,costs):
-        p = figure(title="Cost Function")
+    def plotCost(self,costs, name = 'cost'):
+
+
         x = list(range(len(costs)))
+
+        output_file('imgs/'+name+'.html')
+        p = figure(title="Cost Function: "+name,x_range=(0, x[-1]*1.05), y_range=(min(costs)*0.8, max(costs[1:])*1.2) )
         p.line(x,costs, line_width=3)
+
         show(p) 
     #========================================================
     # Return the vector of partial derivatives \partial C_x 
@@ -263,10 +288,17 @@ class Network(object):
 
             #save imgs
             img = toimage(img)
-            img.save('imgs/w_'+str(k)+'.png')
+            img.save('imgs/28x28/w_'+str(k)+'.png')
             k += 1
 
-
+def vectorized(num, size):
+    try:
+        if size == len(num):
+            return num
+    except: None
+    e = np.zeros((size, 1))
+    e[num] = 1.0
+    return e
 #========================================================
 # Sigmoid function \sigma
 # z is a numpy array

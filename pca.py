@@ -47,15 +47,16 @@ class Pca:
 		k = 1
 		for comp in self.pca_skl.components_:
 			comp = comp.reshape(size,size)
+			comp = (comp-np.min(comp))/(np.max(comp)-np.min(comp))
 			img = toimage(comp)
-			img.save('imgs/comp_'+str(k)+'.png')
+			img.save('imgs/28x28/comp_'+str(k)+'.png')
 			k+=1
 
 		# save the mean image
 		mean = self.pca_skl.mean_
 		mean = mean.reshape(size,size)
 		img = toimage(mean)
-		img.save('imgs/mean'+'.png')
+		img.save('imgs/28x28/mean'+'.png')
 
 	def run(self,training_data,test_data):
 		# fit
