@@ -19,7 +19,7 @@ import poppy.zernike as zk
 from scipy.misc import imrotate, toimage
 import random
 import pandas as pd 
-from skimage.transform import pyramid_gaussian
+from skimage.transform import pyramid_gaussian, pyramid_laplacian
 
 def load_data(dir):
     """Return the MNIST data as a tuple containing the training data,
@@ -164,13 +164,11 @@ def more_data(data, ang = 10):
         data_out.append(img)
 
     # pyramid 
-    downscale = 2
-    pyramid = tuple(pyramid_gaussian(imgM, downscale=downscale))
+    #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
+    pyramid = tuple(pyramid_laplacian(imgM, downscale=2))
     k=1
     for p in pyramid:
-        F = np.fft.fft2(p)
-        toimage(np.abs(F)).save('imgs/fft/fft_'+str(k)+'.png')
-        toimage(p).save('imgs/fft/p_'+str(k)+'.png')
+        toimage(p).save('imgs/pyramid/pl_'+str(k)+'.png')
         k+=1
 
     random.shuffle(data_out)
