@@ -15,6 +15,8 @@ data/info
 *.html
 *.m
 
+*.csv
+
 octave-workspace
 
 !rate.jpg

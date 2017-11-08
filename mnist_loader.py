@@ -46,45 +46,53 @@ def load_data(dir):
 
     return (training_data, validation_data, test_data)
 
-def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None):
-    """Return a tuple containing ``(training_data, validation_data,
-    test_data)``. Based on ``load_data``, but the format is more
-    convenient for use in our implementation of neural networks.
-    In particular, ``training_data`` is a list containing 50,000
-    2-tuples ``(x, y)``.  ``x`` is a 784-dimensional numpy.ndarray
-    containing the input image.  ``y`` is a 10-dimensional
-    numpy.ndarray representing the unit vector corresponding to the
-    correct digit for ``x``.
-    ``validation_data`` and ``test_data`` are lists containing 10,000
-    2-tuples ``(x, y)``.  In each case, ``x`` is a 784-dimensional
-    numpy.ndarry containing the input image, and ``y`` is the
-    corresponding classification, i.e., the digit values (integers)
-    corresponding to ``x``.
-    Obviously, this means we're using slightly different formats for
-    the training data and the validation / test data.  These formats
-    turn out to be the most convenient for use in our neural network
-    code."""
-    tr_d, va_d, te_d = load_data(dir)
-    training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
-    training_results = [vectorized_result(y) for y in tr_d[1]]
-    if only_num == None:
-        training_data = list(zip(training_inputs, training_results))
-    else:
-        training_data = list()
-        for inp, res in zip(training_inputs, training_results):
-            if res[only_num] == [1]:
-                training_data.append((inp,res))
-    #training_data = list(training_data)
-    #print(training_data[0:2])
-    #training_data = list(zip(training_inputs, training_results))
-    #print(training_data[0:2])
-    #exit()
+def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None, new=False):
+    """Return a tuple containing 3 DataFrame"""
+    print('Open files')
 
-    validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
-    validation_data = list(zip(validation_inputs, va_d[1]))
-    test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
-    test_data = list(zip(test_inputs, te_d[1]))
-    return (training_data, validation_data, test_data)
+    try: #if exist csv
+        if new:
+            erro
+        df_train = pd.read_csv("data/train.csv")
+        df_validation = pd.read_csv("data/validation.csv")
+        df_test = pd.read_csv("data/test.csv")
+    except:
+        tr_d, va_d, te_d = load_data(dir)
+        # array
+        training_inputs   = [np.reshape(x, (784, 1)).T[0] for x in tr_d[0]]
+        validation_inputs = [np.reshape(x, (784, 1)).T[0] for x in va_d[0]]
+        test_inputs       = [np.reshape(x, (784, 1)).T[0] for x in te_d[0]]
+        training_results   = [vectorized_result(y).T[0] for y in tr_d[1]]
+        validation_results = [vectorized_result(y).T[0] for y in va_d[1]]
+        test_results       = [vectorized_result(y).T[0] for y in te_d[1]]
+
+        # DataFrames
+        index = ['x'+str(i+1) for i in range(784)]
+        df_inputs_train      = pd.DataFrame(training_inputs,columns=index)
+        df_inputs_validation = pd.DataFrame(validation_inputs,columns=index)
+        df_inputs_test       = pd.DataFrame(test_inputs,columns=index)
+
+        index = ['y'+str(i+1) for i in range(10)]
+        df_results_train      = pd.DataFrame(training_results,columns=index)
+        df_results_validation = pd.DataFrame(validation_results,columns=index)
+        df_results_test      = pd.DataFrame(test_results,columns=index)
+
+        df_train      = pd.concat([df_inputs_train,     df_results_train], axis=1)
+        df_validation = pd.concat([df_inputs_validation,df_results_validation], axis=1)
+        df_test       = pd.concat([df_inputs_test,      df_results_test], axis=1)
+
+        #save
+        df_train.to_csv("data/train.csv",index=False)
+        df_validation.to_csv("data/validation.csv",index=False)
+        df_test.to_csv("data/test.csv",index=False)
+
+
+    # select
+    if only_num != None:
+        col = 'y'+str(only_num)
+        df_train = df_train[df_train[col] == 1.0]
+
+    return (df_train, df_validation, df_test)
 
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the jth
@@ -132,37 +140,32 @@ def digit_print(digit):
                     print('  ',end='')
             print('|')
 
-def more_data(data, ang = 10):
+def more_data(df, ang = 10):
 
     print('more img')
-    data_out = list()
-    for img in data:
-        num = list()
-        if len(img) == 2:
-            num = img[1]
-            img = img[0]
-        
+
+    xs = df.filter(like='x').values.tolist()
+    ys = df.filter(like='y').values.tolist()
+
+    for img,y in zip(xs,ys):
+
         # array to matrix
         size = int(np.sqrt(len(img)))
-        imgM = img.reshape(size,size)
+        imgM = np.reshape(img,(size,size))
 
         # rotate
         img1M = imrotate(imgM,ang)/256
         img2M = imrotate(imgM,-ang)/256
 
         # matrix to array
-        img1 = img1M.reshape(size**2,1)
-        img2 = img2M.reshape(size**2,1)
+        img1 = img1M.reshape(size**2,1).T[0].tolist()
+        img2 = img2M.reshape(size**2,1).T[0].tolist()
 
-        # save
-        if not num == []:
-            img1 = (img1,num)
-            img2 = (img2,num)
-            img = (img,num)
-        data_out.append(img1)
-        data_out.append(img2)
-        data_out.append(img)
+        #save
+        df.append([img1+y,img2+y], ignore_index=True)
 
+    df.to_csv('data/new.csv')
+    exit()
     # pyramid 
     #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
     pyramid = tuple(pyramid_laplacian(imgM, downscale=2))
@@ -173,6 +176,8 @@ def more_data(data, ang = 10):
 
     random.shuffle(data_out)
     return data_out
+
+
 
 #training_data, validation_data, test_data = load_data_wrapper('data/mnist.pkl.gz')
 
