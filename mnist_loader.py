@@ -21,6 +21,9 @@ import random
 import pandas as pd 
 from skimage.transform import pyramid_gaussian, pyramid_laplacian
 
+from common import tic, separate
+
+
 def load_data(dir):
     """Return the MNIST data as a tuple containing the training data,
     the validation data, and the test data.
@@ -48,17 +51,18 @@ def load_data(dir):
 
 def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None, new=False):
     """Return a tuple containing 3 DataFrame"""
-    print('Open files')
-
-    try: #if exist csv
+    print('Open files ...')
+ 
+    try: #if exist csvs
         if new:
             erro
         df_train = pd.read_csv("data/train.csv")
         df_validation = pd.read_csv("data/validation.csv")
         df_test = pd.read_csv("data/test.csv")
+        print("Load by","train.csv","validation.csv","test.csv")
     except:
         tr_d, va_d, te_d = load_data(dir)
-        # array
+        # ==> Array
         training_inputs   = [np.reshape(x, (784, 1)).T[0] for x in tr_d[0]]
         validation_inputs = [np.reshape(x, (784, 1)).T[0] for x in va_d[0]]
         test_inputs       = [np.reshape(x, (784, 1)).T[0] for x in te_d[0]]
@@ -66,17 +70,18 @@ def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None, new=False):
         validation_results = [vectorized_result(y).T[0] for y in va_d[1]]
         test_results       = [vectorized_result(y).T[0] for y in te_d[1]]
 
-        # DataFrames
+        # ==> DataFrames
+        # x
         index = ['x'+str(i+1) for i in range(784)]
         df_inputs_train      = pd.DataFrame(training_inputs,columns=index)
         df_inputs_validation = pd.DataFrame(validation_inputs,columns=index)
         df_inputs_test       = pd.DataFrame(test_inputs,columns=index)
-
+        # y
         index = ['y'+str(i+1) for i in range(10)]
         df_results_train      = pd.DataFrame(training_results,columns=index)
         df_results_validation = pd.DataFrame(validation_results,columns=index)
         df_results_test      = pd.DataFrame(test_results,columns=index)
-
+        # x+y
         df_train      = pd.concat([df_inputs_train,     df_results_train], axis=1)
         df_validation = pd.concat([df_inputs_validation,df_results_validation], axis=1)
         df_test       = pd.concat([df_inputs_test,      df_results_test], axis=1)
@@ -140,32 +145,56 @@ def digit_print(digit):
                     print('  ',end='')
             print('|')
 
-def more_data(df, ang = 10):
+# return more data
+# name: to load in data/
+# new=True: not load type_rot.cvs 
+def rotate_imgs(df, ang = 10,name='train',new = False):
 
-    print('more img')
+    print('Rotate Images ...')
+    
+    try: #if exist csvs
+        if new:
+            erro
+        df = pd.read_csv("data/"+name+"_rot.csv")
+        print('Load by',name+"_rot.csv")
+    except:
 
-    xs = df.filter(like='x').values.tolist()
-    ys = df.filter(like='y').values.tolist()
+        # slice
+        xs,ys = separate(df)
 
-    for img,y in zip(xs,ys):
+        n_imgs = len(xs)
+        imgs_new = list()
+        k=0
+        print(0,'/',n_imgs)
+        for img,y in zip(xs,ys):
+            k+=1
+            if k%10000 == 0:
+                print(k,'/',n_imgs)
 
-        # array to matrix
-        size = int(np.sqrt(len(img)))
-        imgM = np.reshape(img,(size,size))
+            # array to matrix   
+            size = int(np.sqrt(len(img)))
+            imgM = np.reshape(img,(size,size))
 
-        # rotate
-        img1M = imrotate(imgM,ang)/256
-        img2M = imrotate(imgM,-ang)/256
+            # rotate    
+            img1M = imrotate(imgM,ang)/256
+            img2M = imrotate(imgM,-ang)/256
 
-        # matrix to array
-        img1 = img1M.reshape(size**2,1).T[0].tolist()
-        img2 = img2M.reshape(size**2,1).T[0].tolist()
+            # matrix to array
+            img1 = img1M.reshape(size**2,1).T[0].tolist()
+            img2 = img2M.reshape(size**2,1).T[0].tolist()
+
+            #save
+            imgs_new.append(img1+y)
+            imgs_new.append(img2+y)
 
         #save
-        df.append([img1+y,img2+y], ignore_index=True)
+        df_new = pd.DataFrame(imgs_new,columns = df.columns)
+        imgs_new = [] #free memory
+        df = pd.concat([df,df_new])
+        df.to_csv("data/"+type+"_rot.csv",index=False)
 
-    df.to_csv('data/new.csv')
-    exit()
+    return df
+def more_data(df, ang = 10,type='train',new = False):    
     # pyramid 
     #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
     pyramid = tuple(pyramid_laplacian(imgM, downscale=2))

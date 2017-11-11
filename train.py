@@ -1,9 +1,10 @@
 #========================================================
 # Train to Classify Digits
 # CordeiroLibel 2017
-# Reference: http://neuralnetworksanddeeplearning.com/
+# 
 #========================================================
-from network import Network, tic
+from network import Network
+from common import tic
 import mnist_loader as ml
 from pca import Pca
 import numpy as np 
@@ -20,12 +21,11 @@ net.regularization_parameter = 5.0
 
 print(tic(),'ms')
 
-df_train = ml.more_data(df_train)
-print(tic(),'ms')
-exit()
+#df_train = ml.rotate_imgs(df_train)
 
 pca = Pca(20)
-training_data,test_data = pca.run(training_data,test_data)	
+df_train,df_test = pca.run([df_train,df_test])
+
 #pca.images_save()
 print(tic(),'ms')
 

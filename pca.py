@@ -5,10 +5,14 @@
 #========================================================
 
 from sklearn.decomposition import PCA
-import numpy as np
-import sys
 from scipy.misc import toimage
 import matplotlib.pyplot as plt
+
+import pandas as pd
+import numpy as np
+import sys
+
+from common import separate, join
 
 class Pca:
 
@@ -16,29 +20,19 @@ class Pca:
 		self.pca_skl = PCA(n_components=n_components)
 		self.plots = 0 
 
-	def fit(self,data):
-
-		x = [d[0].T[0] for d in data]
-		#y = [d[1].T[0] for d in data]
+	def fit(self,df):
+		x,_ = separate(df)
 
 		self.pca_skl.fit(x)
 
 
-	def transform(self,data, test = False):
+	def transform(self,df):
 
-		x = [d[0].T[0] for d in data]
-
+		x,y = separate(df)
 		x = self.pca_skl.transform(x)
+		df = join(x,y)
 
-		# if is not a test data
-		if not test:
-			y = [d[1].T[0] for d in data]
-			out = [(xi[:,None],yi[:,None]) for xi,yi in zip(x,y)]
-		else:
-			y = [d[1] for d in data]
-			out = [(xi[:,None],yi) for xi,yi in zip(x,y)]
-
-		return out
+		return df
 
 	def images_save(self):
 		size = int(np.sqrt(len(self.pca_skl.components_[0])))
@@ -58,21 +52,38 @@ class Pca:
 		img = toimage(mean)
 		img.save('imgs/28x28/mean'+'.png')
 
-	def run(self,training_data,test_data):
+	def run(self,dfs):
+
+		#force to list
+		is_list = True
+		if not type(dfs) is list:
+			dfs = [dfs] 
+			is_list = False
+
+		df_all = pd.concat(dfs)
+
 		# fit
-		print('pca fit...')
+		print('pca fit ...')
 		sys.stdout.flush()
-		self.fit(training_data)
+		self.fit(df_all)
 
+		
 		#transform
-		print('pca transform...')
+		print('pca transform ...')
 		sys.stdout.flush()
-		training_data = self.transform(training_data)
-		test_data = self.transform(test_data, test = True)
+		dfs_out = list()
+		for df in dfs:
+			dfs_out.append(self.transform(df))
+		
 
+		#return
 		print('pca end')
 		sys.stdout.flush()
-		return training_data, test_data
+
+		if is_list:
+			return dfs_out
+		else:
+			return dfs_out[0]
 
 	def plot(self, data,pause = True, name = 'Dataset'):
 		n_points = 3000

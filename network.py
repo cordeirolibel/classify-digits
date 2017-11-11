@@ -15,7 +15,6 @@
 import numpy as np
 from bokeh.plotting import figure, show, output_file
 import random
-import time
 import sys
 from scipy.misc import toimage
 
@@ -299,6 +298,7 @@ def vectorized(num, size):
     e = np.zeros((size, 1))
     e[num] = 1.0
     return e
+
 #========================================================
 # Sigmoid function \sigma
 # z is a numpy array
@@ -314,14 +314,3 @@ def softmax(z):
     total = sum(z)
     return z/total
 
-#========================================================
-#function of time, milliseconds of last tic() 
-#reset define if you want clear the clock for the next tic()
-last_time  = time.time()
-def tic(reset = True):
-    global last_time
-    toc = time.time()
-    delta = toc - last_time
-    if reset:
-        last_time = toc
-    return np.around(delta*1000, decimals = 2)
