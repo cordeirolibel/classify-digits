@@ -136,7 +136,11 @@ def more_data(data, ang = 10):
 
     print('more img')
     data_out = list()
+    i=0
     for img in data:
+        i+=1
+        if i%100 ==0:
+            print(i)
         num = list()
         if len(img) == 2:
             num = img[1]
@@ -147,29 +151,43 @@ def more_data(data, ang = 10):
         imgM = img.reshape(size,size)
 
         # rotate
-        img1M = imrotate(imgM,ang)/256
-        img2M = imrotate(imgM,-ang)/256
+        #img1M = imrotate(imgM,ang)/256
+        #img2M = imrotate(imgM,-ang)/256
 
         # matrix to array
-        img1 = img1M.reshape(size**2,1)
-        img2 = img2M.reshape(size**2,1)
+        #img1 = img1M.reshape(size**2,1)
+        #img2 = img2M.reshape(size**2,1)
+
+        # pyramid 
+        #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
+        pyramid = tuple(pyramid_laplacian(imgM, downscale=2))
+        #pyramid1 = tuple(pyramid_laplacian(img1M, downscale=2))
+        #pyramid2 = tuple(pyramid_laplacian(img2M, downscale=2))
+
+
+        k=1
+        #for p,p1,p2 in zip(pyramid,pyramid1,pyramid2):
+        img = np.array([[0]])
+        for p in pyramid:
+            # matrix to array
+            size = len(p)*len(p[0])
+
+            img = np.concatenate([img,p.reshape(size,1)])
+            #img1 = np.concatenate([img1,p.reshape(size,1)])
+            #img2 = np.concatenate([img2,p.reshape(size,1)])
+            k+=1
 
         # save
         if not num == []:
-            img1 = (img1,num)
-            img2 = (img2,num)
+            #img1 = (img1,num)
+            #img2 = (img2,num)
             img = (img,num)
-        data_out.append(img1)
-        data_out.append(img2)
+
+        #data_out.append(img1)
+        #data_out.append(img2)
         data_out.append(img)
 
-    # pyramid 
-    #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
-    pyramid = tuple(pyramid_laplacian(imgM, downscale=2))
-    k=1
-    for p in pyramid:
-        toimage(p).save('imgs/pyramid/pl_'+str(k)+'.png')
-        k+=1
+        
 
     random.shuffle(data_out)
     return data_out

@@ -8,6 +8,8 @@ data/info
 *.png
 *.jpg
 
+*.csv
+
 *.pyc
 *.gz
 *.ggb

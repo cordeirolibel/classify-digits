@@ -12,21 +12,23 @@ import numpy as np
 training_data, validation_data, test_data = ml.load_data_wrapper()#,only_num = 3)
 
 #net = Network([784, 20, 10])
-net = Network([20,40, 10])
+net = Network([200,70, 10])
 net.cost_function = 'cross-entropy'
 net.regularization_parameter = 5.0
 
 tic()
 
+test_data = ml.more_data(test_data)
 training_data = ml.more_data(training_data)
+
 print(tic(),'ms')
 
-pca = Pca(20)
+pca = Pca(200)
 training_data,test_data = pca.run(training_data,test_data)	
 #pca.images_save()
 print(tic(),'ms')
 
-net.SGD(training_data, 10, 10, 0.1, test_data=test_data,plot_cost=True)
+net.SGD(training_data, 15, 10, 0.1, test_data=test_data)#,plot_cost=True)
 #net.weights_img_save()
 
 #predict_data = net.predict(test_data)
