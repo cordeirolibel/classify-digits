@@ -50,6 +50,9 @@ class Network(object):
         self.regularization_parameter = 0
         self.n_train = None
 
+        output_file('imgs/hist_w.html')
+        self.plot = figure(title='Weights')
+
     #========================================================
     # ==>> Network output
     # Return the output of the network if "a" is input.
@@ -251,8 +254,6 @@ class Network(object):
         return float(cost)
 
     def plotCost(self,costs, name = 'cost'):
-
-
         x = list(range(len(costs)))
 
         output_file('imgs/'+name+'.html')
@@ -260,6 +261,25 @@ class Network(object):
         p.line(x,costs, line_width=3)
 
         show(p) 
+
+
+    def plot_w(self, name = '',show_=False,color='blue'):
+        # weights to array
+        w_array = np.array([])
+        for ws in self.weights:
+            w_array = np.append(ws.ravel(),w_array)
+
+        #histogram
+        hist, edges = np.histogram(w_array, bins=50, density=True)
+        bincenters = 0.5*(edges[1:]+edges[:-1])
+
+        #plot
+        #self.plot.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],legend=name,color=color)
+        self.plot.line(bincenters,hist, line_width=2,legend=name,color=color)
+
+        if (show_):
+            show(self.plot)
+
     #========================================================
     # Return the vector of partial derivatives \partial C_x 
     # /\partial a for the output activations.
