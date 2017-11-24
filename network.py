@@ -17,6 +17,9 @@ from bokeh.plotting import figure, show, output_file
 import random
 import sys
 from scipy.misc import toimage
+import pandas as pd 
+
+from common import separate, join
 
 # ##### The Network Class
 
@@ -51,11 +54,13 @@ class Network(object):
 
     #========================================================
     # ==>> Network output
-    # Return the output of the network if "a" is input.
+    # Return the output of the network if "x" is input.
     def feedforward(self, a):
+        a = a.reshape([len(a),1])
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, a)+b
             a = sigmoid(z)
+            
         return a
 
     #========================================================
@@ -68,43 +73,45 @@ class Network(object):
     # network will be evaluated against the test data after each
     # epoch, and partial progress printed out.  This is useful for
     # tracking progress, but slows things down substantially.
-    def SGD(self, training_data, epochs, mini_batch_size, eta,test_data=None, plot_cost = False):
+    def SGD(self, df_train, epochs, mini_batch_size, eta,df_test=None, plot_cost = False):
         
         sys.stdout.flush()
 
-        if test_data: 
-            n_test = len(test_data)
-        self.n_train = len(training_data)
+        if df_test is not None: 
+            n_test = len(df_test)
+        self.n_train = len(df_train)
 
         costs_test = []
         costs_train = []
 
         for j in range(epochs):
 
-            if test_data:
-                print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
+            if df_test is not None: 
+                print ("Epoch {0}: {1} / {2}".format(j, self.evaluate(df_test), n_test))
                 if plot_cost:
-                    costs_test.append(self.cost_func(test_data,convert=True))
-                    costs_train.append(self.cost_func(training_data))
+                    costs_test.append(self.cost_func(df_test,convert=True))
+                    costs_train.append(self.cost_func(df_train))
             else:
                 print ("Epoch {0} complete".format(j))
             sys.stdout.flush()
 
             # slice training_data in mini_batch_size size random
-            random.shuffle(training_data)
+            df_train = df_train.sample(frac=1).reset_index(drop=True)
+     
             mini_batches = [
-                training_data[k:k+mini_batch_size]
+                df_train[k:k+mini_batch_size]
                 for k in range(0, self.n_train, mini_batch_size)]
 
-            for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
+            for df_mini_batch in mini_batches:
+                self.update_mini_batch(df_mini_batch, eta)
     
         rate = 0
-        if test_data:
-            rate = self.evaluate(test_data)
+        if df_test is not None:
+            rate = self.evaluate(df_test)
             print ("Epoch {0}: {1} / {2}".format(epochs, rate, n_test))            
         else:
             print ("Epoch {0} complete".format(epochs))
+            n_test=1
 
         sys.stdout.flush()
 
@@ -119,13 +126,15 @@ class Network(object):
     # The "mini_batch" is a list of tuples "(x, y)", and "eta"
     # is the learning rate.
 
-    def update_mini_batch(self, mini_batch, eta):
-        
+    def update_mini_batch(self, df_mini_batch, eta):
+
+        xs, ys = separate(df_mini_batch)
+
         #the same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
-        for x, y in mini_batch:
+        for x, y in zip(xs,ys):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
 
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
@@ -133,11 +142,10 @@ class Network(object):
         
         rp = self.regularization_parameter
         n = self.n_train
-        self.weights = [(1-eta*rp/n)*w-(eta/len(mini_batch))*nw 
+        self.weights = [(1-eta*rp/n)*w-(eta/len(df_mini_batch))*nw 
                         for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb 
+        self.biases = [b-(eta/len(df_mini_batch))*nb 
                        for b, nb in zip(self.biases, nabla_b)]
-
 
     #========================================================
     # ==>> Backpropagation
@@ -151,6 +159,11 @@ class Network(object):
         # x, a[0]=layer1, a[1]=layer2, ...
         a = list()
         z = list()
+
+        #column vector
+        x = x.reshape([len(x),1])
+        y = y.reshape([len(y),1])
+
         for layer in range(self.num_layers-1):
             # z = w*a+b
             if layer == 0:
@@ -163,14 +176,16 @@ class Network(object):
         # BP1: d = partial C/partial a^L * sigmoid'(z^L)
         #      d = (a^L-y) (*) sigmoid'(z^L)
         # (*) Hadamart Product -> *
+        
         if self.cost_function == 'quadratic':
             delta = (a[-1] - y) * (sigmoid(z[-1],1))
         else: #cross-entropy
             delta = (sigmoid(z[-1],1)) * ((1-y)/(1-a[-1]) - y/a[-1])
-
+        
         # same size of biases but of zeros
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+ 
 
         nabla_b[-1] = delta
         #nabla_w[-1] = np.dot(a[-2],delta)
@@ -201,12 +216,14 @@ class Network(object):
     # network outputs the correct result. Note that the neural
     # network's output is assumed to be the index of whichever
     # neuron in the final layer has the highest activation.
-    def evaluate(self, test_data):
+    def evaluate(self, df_test):
+        xs, ys = separate(df_test)
         test_results = list()
-        for (x, y) in test_data:
+
+        for x, y in zip(xs, ys):
             a = self.feedforward(x)
-            test_results.append((np.argmax(a), y))
-        #print(test_results)
+            test_results.append((np.argmax(a), np.argmax(y)))
+
         return sum(int(x == y) for (x, y) in test_results)
 
     #predict data
