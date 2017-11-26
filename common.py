@@ -18,6 +18,8 @@ def separate(df):
 	x = np.array(x)
 	y = np.array(y)
 
+	if x.size==0 and y.size==0:
+		return df,np.array([])
 	return x,y
 
 #========================================================
@@ -26,12 +28,13 @@ def separate(df):
 # 
 def join(xs,ys):
 	index = ['x'+str(i+1) for i in range(len(xs[0]))]
-	index += ['y'+str(i+1) for i in range(len(ys[0]))]
 
-	xy = [np.concatenate([x,y]) for x,y in zip(xs,ys)]
-
-	df= pd.DataFrame(xy,columns=index)
-	
+	if ys.size!= 0:
+		index += ['y'+str(i+1) for i in range(len(ys[0]))]
+		xy = [np.concatenate([x,y]) for x,y in zip(xs,ys)]
+		df= pd.DataFrame(xy,columns=index)
+	else:
+		df= pd.DataFrame(xs,columns=index)
 	return df
 
 #========================================================

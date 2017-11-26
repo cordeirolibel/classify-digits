@@ -52,6 +52,11 @@ class Network(object):
         self.regularization_parameter = 0
         self.n_train = None
 
+        #dataframe for weights
+        self.n_weights = sum([sizes[i]*sizes[i+1] for i in range(self.num_layers-1)])
+        index = ['w'+str(i+1) for i in range(self.n_weights)]
+        self.df_weights = pd.DataFrame(columns=index)
+
     #========================================================
     # ==>> Network output
     # Return the output of the network if "x" is input.
@@ -73,7 +78,7 @@ class Network(object):
     # network will be evaluated against the test data after each
     # epoch, and partial progress printed out.  This is useful for
     # tracking progress, but slows things down substantially.
-    def SGD(self, df_train, epochs, mini_batch_size, eta,df_test=None, plot_cost = False):
+    def SGD(self, df_train, epochs, mini_batch_size, eta,df_test=None, plot_cost = False,save_ws = False):
         
         sys.stdout.flush()
 
@@ -102,8 +107,21 @@ class Network(object):
                 df_train[k:k+mini_batch_size]
                 for k in range(0, self.n_train, mini_batch_size)]
 
+            weights = list()
             for df_mini_batch in mini_batches:
                 self.update_mini_batch(df_mini_batch, eta)
+
+            if save_ws:
+                # weights to array
+                w_array = np.array([])
+                for ws in self.weights:
+                    w_array = np.append(ws.ravel(),w_array)
+                weights.append(w_array.tolist())
+            if save_ws:
+                index = ['w'+str(i+1) for i in range(self.n_weights)]
+                weights = pd.DataFrame(weights,columns=index)
+                self.df_weights = pd.concat([self.df_weights, weights])
+                
     
         rate = 0
         if df_test is not None:
@@ -306,6 +324,7 @@ class Network(object):
             img = toimage(img)
             img.save('imgs/28x28/w_'+str(k)+'.png')
             k += 1
+
 
 def vectorized(num, size):
     try:

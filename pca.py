@@ -22,7 +22,7 @@ class Pca:
 
 	def fit(self,df):
 		x,_ = separate(df)
-
+		sys.stdout.flush()
 		self.pca_skl.fit(x)
 
 
@@ -30,9 +30,7 @@ class Pca:
 
 		x,y = separate(df)
 		x = self.pca_skl.transform(x)
-		df = join(x,y)
-
-		return df
+		return join(x,y)
 
 	def images_save(self):
 		size = int(np.sqrt(len(self.pca_skl.components_[0])))

@@ -99,6 +99,39 @@ def load_data_wrapper(dir = 'data/mnist.pkl.gz', only_num = None, new=False):
 
     return (df_train, df_validation, df_test)
 
+#save 'dfs' with name 'names'
+def save(dfs, names):
+
+    if not type(dfs) is list:
+        dfs = [dfs] 
+        names = [names] 
+
+    if len(dfs)!=len(names):
+        print('Erro:', 'different size for \'dfs\' and \'names\'')
+        exit()
+
+    #save
+    for df, name in zip(dfs, names):
+        df.to_csv('data/'+name+'.csv',index=False)
+
+#load a list of Dataframe with name 'names.csv'
+def load(names):
+    is_list = True
+    if not type(names) is list:
+        is_list = False
+        names = [names] 
+
+    #load
+    dfs_out = list()
+    for name in names:
+        dfs_out.append(pd.read_csv('data/'+name+'.csv'))
+
+    #return
+    if is_list:
+        return dfs_out
+    else:
+        return dfs_out[0]
+        
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the jth
     position and zeroes elsewhere.  This is used to convert a digit
@@ -167,6 +200,10 @@ def rotate_imgs(df, ang = 10,name='train',new = False):
         k=0
         print(0,'/',n_imgs)
         for img,y in zip(xs,ys):
+            #img = img.reshape([len(img),1])
+            #y = y.reshape([len(y),1])
+            y = y.tolist()
+
             k+=1
             if k%10000 == 0:
                 print(k,'/',n_imgs)
@@ -182,7 +219,7 @@ def rotate_imgs(df, ang = 10,name='train',new = False):
             # matrix to array
             img1 = img1M.reshape(size**2,1).T[0].tolist()
             img2 = img2M.reshape(size**2,1).T[0].tolist()
-
+            
             #save
             imgs_new.append(img1+y)
             imgs_new.append(img2+y)
@@ -191,9 +228,11 @@ def rotate_imgs(df, ang = 10,name='train',new = False):
         df_new = pd.DataFrame(imgs_new,columns = df.columns)
         imgs_new = [] #free memory
         df = pd.concat([df,df_new])
-        df.to_csv("data/"+type+"_rot.csv",index=False)
+        df.to_csv("data/"+name+"_rot.csv",index=False)
 
     return df
+
+
 def more_data(df, ang = 10,type='train',new = False):    
     # pyramid 
     #pyramid = tuple(pyramid_gaussian(imgM, downscale=2))
@@ -207,17 +246,3 @@ def more_data(df, ang = 10,type='train',new = False):
     return data_out
 
 
-
-#training_data, validation_data, test_data = load_data_wrapper('data/mnist.pkl.gz')
-
-#img = training_data[222][0]
-
-#size = int(np.sqrt(len(img)))
-#img = img.reshape(size,size)
-
-
-#print(zk.zernike(img))
-
-#img = imrotate(img,45)/256
-
-#print(zk.zernike(img))
